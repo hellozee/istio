@@ -2,6 +2,8 @@
 set -o errexit
 set -o pipefail
 
+echo "Configuring git"
+
 cat <<- EOF > $HOME/.netrc
     machine github.com
     login $GITHUB_ACTOR
@@ -12,12 +14,17 @@ cat <<- EOF > $HOME/.netrc
 EOF
 chmod 600 $HOME/.netrc
 
-git config user.name github-actions
+git config user.name $GITHUB_ACTOR
 git config user.email github-actions@github.com
+
+echo "Fetchin target branches"
 
 TARGETS=$(git branch -r | grep origin/tetrate-release)
 
+echo "Creating PRs"
+
 for branch in $TARGETS; do
     branch_name=$(cut -f2 -d"/" <<< $branch)
+    echo "Creating PR for $branch_name"
     hub pull-request -b $branch -h origin/tetrate-workflow -m "AUTO: Backporting patches to $branch_name"
 done
