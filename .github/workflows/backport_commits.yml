@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       
       - name: invoke hub
         run: bash ./tetrateci/port_patches_to_release.sh

@@ -1,6 +1,6 @@
 #!/bin/bash
-set -o errexit
-set -o pipefail
+#set -o errexit
+#set -o pipefail
 
 echo "Configuring git"
 
@@ -17,9 +17,11 @@ chmod 600 $HOME/.netrc
 git config user.name $GITHUB_ACTOR
 git config user.email github-actions@github.com
 
-echo "Fetchin target branches"
+echo "Fetching target branches"
 
-TARGETS=$(git branch -r | grep origin/tetrate-release)
+git branch -r | grep origin/tetrate-release
+
+TARGETS=$(git branch -r| grep origin/tetrate-release)
 
 echo "Creating PRs"
 
