@@ -24,6 +24,7 @@ TARGETS=$(git branch -r | grep origin/tetrate-release)
 echo "Creating PRs"
 
 for branch in $TARGETS; do
+    echo "Getting branch name for $branch"
     branch_name=$(cut -f2 -d"/" <<< $branch)
     echo "Creating PR for $branch_name"
     hub pull-request -b $branch -h origin/tetrate-workflow -m "AUTO: Backporting patches to $branch_name"
