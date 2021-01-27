@@ -2,6 +2,16 @@
 set -o errexit
 set -o pipefail
 
+cat <<- EOF > $HOME/.netrc
+    machine github.com
+    login $GITHUB_ACTOR
+    password $GITHUB_TOKEN
+    machine api.github.com
+    login $GITHUB_ACTOR
+    password $GITHUB_TOKEN
+EOF
+chmod 600 $HOME/.netrc
+
 git config user.name github-actions
 git config user.email github-actions@github.com
 
