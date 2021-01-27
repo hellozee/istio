@@ -1,6 +1,6 @@
 #!/bin/bash
-#set -o errexit
-#set -o pipefail
+set -o errexit
+set -o pipefail
 
 echo "Configuring git"
 
@@ -19,9 +19,7 @@ git config user.email github-actions@github.com
 
 echo "Fetching target branches"
 
-git branch -r | grep origin/tetrate-release
-
-TARGETS=$(git branch -r| grep origin/tetrate-release)
+TARGETS=$(git branch -r| grep origin/tetrate-release | xargs)
 
 echo "Creating PRs"
 
@@ -29,5 +27,5 @@ for branch in $TARGETS; do
     echo "Getting branch name for $branch"
     branch_name=$(cut -f2 -d"/" <<< $branch)
     echo "Creating PR for $branch_name"
-    hub pull-request -b $branch -h origin/tetrate-workflow -m "AUTO: Backporting patches to $branch_name"
+    hub pull-request -b $branch -m "AUTO: Backporting patches to $branch_name"
 done
