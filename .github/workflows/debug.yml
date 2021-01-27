@@ -6,6 +6,9 @@ jobs:
   debug:
     runs-on: ubuntu-latest
     steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        
       - name: Start SSH session
         uses: luchihoratiu/debug-via-ssh@main
         with:
