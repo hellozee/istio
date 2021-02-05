@@ -306,5 +306,5 @@ jobs:
           API_KEY: ${{ secrets.BINTRAY_API_KEY }}
           TAG: ${{ steps.get_tag.outputs.TAG }}
           BINTRAY_API: ${{ secrets.BINTRAY_ARCHIVE_API }}
-Q        # not using the official build container 
+        # not using the official build container 
         run: ./tetrateci/create_istio_release.sh
