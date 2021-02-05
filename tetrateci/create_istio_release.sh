@@ -35,13 +35,14 @@ go run main.go build --manifest manifest.yaml
 # go run main.go validate --release /tmp/istio-release/out # seems like it fails if not all the targets are generated
 go run main.go publish --release /tmp/istio-release/out --dockerhub $HUB
 
-if [[ ${BUILD} != "fips" ]]; then
-    PACKAGES=$(ls /tmp/istio-release/out/ | grep "istio")
-else
-    PACKAGES=$(ls /tmp/istio-release/out/ | grep "istio" | grep "linux-amd64")
-fi
-
 if [[ -z TEST ]]; then
+
+    if [[ ${BUILD} != "fips" ]]; then
+        PACKAGES=$(ls /tmp/istio-release/out/ | grep "istio")
+    else
+        PACKAGES=$(ls /tmp/istio-release/out/ | grep "istio" | grep "linux-amd64")
+    fi
+
     for package in $PACKAGES; do
         echo "Publishing $package"
         rm -f /tmp/curl.out
