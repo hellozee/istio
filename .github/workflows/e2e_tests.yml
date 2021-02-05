@@ -16,18 +16,48 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
-      - name: docker-login
+      - name: Get Registry
+        id: get_registry
+        run: |
+          [[ ${HUB} == *.* ]] && REGISTRY=$(echo ${HUB} | cut -d/ -f1)
+          echo REGISTRY=${REGISTRY}
+          echo REGISTRY=${REGISTRY} >> $GITHUB_ENV
+
+      - name: docker-login-non-docker
         uses: docker/login-action@v1
+        if: ${{ env.REGISTRY != null }}
         with:
-          registry: ${{ env.HUB }}
+          registry: ${{ env.REGISTRY }}
           username: ${{ secrets.TEST_HUB_USER }}
           password: ${{ secrets.TEST_HUB_PASS }}
 
+      - name: docker-login-docker
+        uses: docker/login-action@v1
+        if: ${{ env.REGISTRY == null }}
+        with:
+          username: ${{ secrets.TEST_HUB_USER }}
+          password: ${{ secrets.TEST_HUB_PASS }}
+
+      - name: Get the tag
+        id: get_tag
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        shell: bash
+
+      - name: set up go 1.15
+        uses: actions/setup-go@v1
+        if: ${{ !contains(github.event.ref, 'fips') }}
+        with:
+          go-version: 1.15
+
+      - name: setup fips compliant go
+        if: ${{ contains(github.event.ref, 'fips') }}
+        run: bash ./tetrateci/setup_boring_go.sh
+
       - name: build and push images
-        shell: 'script -q -e -c "bash {0}"'
-        run: |
-          export TAG=$(git describe --tags)
-          make docker push
+        run: bash ./tetrateci/create_istio_release.sh
+        env:
+          TAG: ${{ steps.get_tag.outputs.TAG }}
+          TEST: "true"
 
   eks-e2e-test:
     name: eks-e2e-test
@@ -36,7 +66,7 @@ jobs:
 
     strategy:
       matrix:
-        version: [1.18]
+        version: [1.18, 1.17, 1.16]
 
     steps:
       - name: checkout
@@ -51,8 +81,25 @@ jobs:
 
       - name: set up go 1.15
         uses: actions/setup-go@v1
+        if: ${{ !contains(github.event.ref, 'fips') }}
         with:
           go-version: 1.15
+
+      - name: setup fips compliant go
+        if: ${{ contains(github.event.ref, 'fips') }}
+        run: bash ./tetrateci/setup_boring_go.sh
+
+      - name: Get the tag
+        id: get_tag
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        shell: bash
+
+      - name: Get minor version
+        id: get_minor_ver
+        run: echo ::set-output name=REL_BRANCH_VER::$(echo $TAG | grep -Eo '[0-9]+\.[0-9]+')
+        shell: bash
+        env:
+          TAG: ${{ steps.get_tag.outputs.TAG }}
 
       - name: eks-cluster-create
         run: bash ./tetrateci/create_eks_cluster.sh
@@ -60,24 +107,11 @@ jobs:
           VER: ${{ matrix.version }}
 
       - name: integration-tests
-        run: |
-          export TAG=$(git describe --tags)
-          go test -tags=integ ./tests/integration/operator/...  -istio.test.skipVM true -p 1  -test.v
-          go test -tags=integ ./tests/integration/helm/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ -timeout 30m -run='TestEmptyCluster|TestFileOnly|TestDirectoryWithoutRecursion|TestDirectoryWithRecursion|TestInvalidFileError|TestJsonInputFile|TestJsonOutput|TestKubeOnly|TestFileAndKubeCombined|TestAllNamespaces|TestTimeout|TestErrorLine|TestWait|TestVersion|TestDescribe|TestAddToAndRemoveFromMesh|TestProxyConfig|TestProxyStatus|TestAuthZCheck|TestLocality|TestMain|TestMirroring|TestMirroringExternalService|TestTproxy|TestRevisionedUpgrade|TestValidation|TestEnsureNoMissingCRDs|TestWebhook' ./tests/integration/pilot/ -istio.test.skipVM true -p 1 -test.v 
-          go test -tags=integ ./tests/integration/pilot/analysis/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ ./tests/integration/pilot/cni/... -istio.test.skipVM true -p 1 -test.v 
-          go test -tags=integ ./tests/integration/pilot/revisions/... -istio.test.skipVM true -p 1 -test.v 
-          go test -tags=integ -timeout 30m -run='TestStatsFilter|TestStatsTCPFilter|TestSetup|TestIstioctlMetrics|TestTcpMetric|TestStatsFilter|TestWASMTcpMetric|TestWasmStatsFilter|TestMain|TestCustomizeMetrics'  ./tests/integration/telemetry/stats/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/ca_custom_root/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/chiron/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/file_mounted_certs/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/filebased_tls_origination/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/mtls_first_party_jwt/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/mtlsk8sca/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/sds_egress/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/sds_tls_origination/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/webhook/... -istio.test.skipVM true -p 1 -test.v
+        run: bash ./tetrateci/test_${REL_BRANCH_VER}.sh
+        env:
+          TAG: ${{ steps.get_tag.outputs.TAG }}
+          REL_BRANCH_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
+          CLUSTER: eks
 
       - name: eks-cluster-delete
         if: always()
@@ -88,11 +122,19 @@ jobs:
   gke-e2e-test:
     name: gke-e2e-test
     runs-on: ubuntu-latest
-    needs: [create-test-images]
+    # TODO gke test modify iop yaml so we need to run it at the end to not interfere in eks and aks test
+    # removing aks-e2e-test as the credentials are not set up
+    needs: [create-test-images, eks-e2e-test]
 
     strategy:
       matrix:
-        version: ["1.17.13-gke.2600"]
+        include:
+          - version: "1.18.12-gke.1201"
+            channel: "rapid"
+          - version: "1.17.14-gke.2600"
+            channel: "regular"
+          - version: "1.16.15-gke.6000"
+            channel: "stable"
     
     steps:
       - name: checkout
@@ -107,32 +149,38 @@ jobs:
 
       - name: set up go 1.15
         uses: actions/setup-go@v1
+        if: ${{ !contains(github.event.ref, 'fips') }}
         with:
           go-version: 1.15
+
+      - name: setup fips compliant go
+        if: ${{ contains(github.event.ref, 'fips') }}
+        run: bash ./tetrateci/setup_boring_go.sh
+
+      - name: Get the tag
+        id: get_tag
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        shell: bash
+
+      - name: Get minor version
+        id: get_minor_ver
+        run: echo ::set-output name=REL_BRANCH_VER::$(echo $TAG | grep -Eo '[0-9]+\.[0-9]+')
+        shell: bash
+        env:
+          TAG: ${{ steps.get_tag.outputs.TAG }}
 
       - name: gke-cluster-create
         run: bash ./tetrateci/create_gke_cluster.sh
         env:
           VER: ${{ matrix.version }}
+          CHAN: ${{ matrix.channel  }}
 
       - name: integration-tests
-        run: |
-          export TAG=$(git describe --tags)
-          go test -tags=integ ./tests/integration/operator/...  -istio.test.skipVM true -p 1  -test.v
-          go test -tags=integ ./tests/integration/helm/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ -timeout 30m -run='TestEmptyCluster|TestFileOnly|TestDirectoryWithoutRecursion|TestDirectoryWithRecursion|TestInvalidFileError|TestJsonInputFile|TestJsonOutput|TestKubeOnly|TestFileAndKubeCombined|TestAllNamespaces|TestTimeout|TestErrorLine|TestWait|TestVersion|TestDescribe|TestAddToAndRemoveFromMesh|TestProxyConfig|TestProxyStatus|TestAuthZCheck|TestLocality|TestMain|TestMirroring|TestMirroringExternalService|TestTproxy|TestValidation|TestEnsureNoMissingCRDs|TestWebhook' ./tests/integration/pilot/ -istio.test.skipVM true -p 1 -test.v 
-          go test -tags=integ ./tests/integration/pilot/analysis/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ ./tests/integration/pilot/revisions/... -istio.test.skipVM true -p 1 -test.v
-          go test -count=1 -tags=integ ./tests/integration/pilot/cni/...  -istio.test.kube.helm.iopFile $(pwd)/tetrateci/iop-gke-integration.yml  -test.v
-          go test -tags=integ -timeout 30m -run='TestStatsFilter|TestStatsTCPFilter|TestSetup|TestIstioctlMetrics|TestTcpMetric|TestStatsFilter|TestWASMTcpMetric|TestWasmStatsFilter|TestMain|TestCustomizeMetrics'  ./tests/integration/telemetry/stats/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/ca_custom_root/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/file_mounted_certs/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/filebased_tls_origination/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/mtls_first_party_jwt/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/mtlsk8sca/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/sds_egress/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/sds_tls_origination/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/webhook/... -istio.test.skipVM true -p 1 -test.v
+        run: bash ./tetrateci/test_${REL_BRANCH_VER}.sh
+        env:
+          TAG: ${{ steps.get_tag.outputs.TAG }}
+          REL_BRANCH_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
+          CLUSTER: gke
 
       - name: gke-cluster-delete
         if: always()
@@ -141,13 +189,15 @@ jobs:
           VER: ${{ matrix.version }}
 
   aks-e2e-test:
+    ## TODO: temporarily disabling it till credentials are set
+    if: ${{ false }}
     name: aks-e2e-test
     runs-on: ubuntu-latest
     needs: [create-test-images]
 
     strategy:
       matrix:
-        version: [1.18.10]
+        version: [1.18.14, 1.17.13, 1.16.15]
 
     steps:
       - name: checkout
@@ -160,8 +210,25 @@ jobs:
 
       - name: set up go 1.15
         uses: actions/setup-go@v1
+        if: ${{ !contains(github.event.ref, 'fips') }}
         with:
           go-version: 1.15
+
+      - name: setup fips compliant go
+        if: ${{ contains(github.event.ref, 'fips') }}
+        run: bash ./tetrateci/setup_boring_go.sh
+
+      - name: Get the tag
+        id: get_tag
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        shell: bash
+
+      - name: Get minor version
+        id: get_minor_ver
+        run: echo ::set-output name=REL_BRANCH_VER::$(echo $TAG | grep -Eo '[0-9]+\.[0-9]+')
+        shell: bash
+        env:
+          TAG: ${{ steps.get_tag.outputs.TAG }}
 
       - name: aks-cluster-create
         run: bash ./tetrateci/create_aks_cluster.sh
@@ -170,22 +237,11 @@ jobs:
           RESOURCE: ${{ secrets.AZURE_RESOURCE }}
 
       - name: integration-tests
-        run: |
-          export TAG=$(git describe --tags)
-          go test -tags=integ ./tests/integration/operator/...  -istio.test.skipVM true -p 1  -test.v
-          go test -tags=integ ./tests/integration/helm/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ -timeout 30m -run='TestEmptyCluster|TestFileOnly|TestDirectoryWithoutRecursion|TestDirectoryWithRecursion|TestInvalidFileError|TestJsonInputFile|TestJsonOutput|TestKubeOnly|TestFileAndKubeCombined|TestAllNamespaces|TestTimeout|TestErrorLine|TestWait|TestVersion|TestDescribe|TestAddToAndRemoveFromMesh|TestProxyConfig|TestProxyStatus|TestAuthZCheck|TestLocality|TestMain|TestMirroring|TestMirroringExternalService|TestTproxy|TestValidation|TestEnsureNoMissingCRDs|TestWebhook' ./tests/integration/pilot/ -istio.test.skipVM true -p 1 -test.v 
-          go test -tags=integ ./tests/integration/pilot/analysis/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ ./tests/integration/pilot/revisions/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ -timeout 30m -run='TestStatsFilter|TestStatsTCPFilter|TestSetup|TestIstioctlMetrics|TestTcpMetric|TestStatsFilter|TestWASMTcpMetric|TestWasmStatsFilter|TestMain|TestCustomizeMetrics'  ./tests/integration/telemetry/stats/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/ca_custom_root/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/file_mounted_certs/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/filebased_tls_origination/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/mtls_first_party_jwt/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/mtlsk8sca/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/sds_egress/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/sds_tls_origination/... -istio.test.skipVM true -p 1 -test.v
-          go test -tags=integ  ./tests/integration/security/webhook/... -istio.test.skipVM true -p 1 -test.v
+        run: bash ./tetrateci/test_${REL_BRANCH_VER}.sh
+        env:
+          TAG: ${{ steps.get_tag.outputs.TAG }}
+          REL_BRANCH_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
+          CLUSTER: aks
 
       - name: aks-cluster-delete
         if: always()
@@ -225,6 +281,7 @@ jobs:
     name: release-builder-run
     runs-on: ubuntu-latest
     env:
+      # Overriding workflow level HUB for deploy
       HUB: ${{ secrets.DEPLOY_HUB }}
 
     steps:
@@ -249,4 +306,5 @@ jobs:
           API_KEY: ${{ secrets.BINTRAY_API_KEY }}
           TAG: ${{ steps.get_tag.outputs.TAG }}
           BINTRAY_API: ${{ secrets.BINTRAY_ARCHIVE_API }}
+Q        # not using the official build container 
         run: ./tetrateci/create_istio_release.sh
