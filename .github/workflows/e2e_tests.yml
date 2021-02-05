@@ -130,7 +130,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - version: "1.18.12-gke.1201"
+          - version: "1.18.12-gke.1205"
             channel: "rapid"
           #- version: "1.17.14-gke.2600"
           #  channel: "regular"
