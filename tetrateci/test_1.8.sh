@@ -8,21 +8,21 @@ if [[ ${CLUSTER} == "gke" ]]; then
   git apply tetrateci/chiron-gke.patch
 fi
 
-go test -count=1 -tags=integ ./tests/integration/helm/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/operator/...  -istio.test.skipVM true -p 1  -test.v
-go test -count=1 -tags=integ ./tests/integration/pilot/analysis/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/pilot/revisions/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/telemetry/requestclassification/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/telemetry/outboundtrafficpolicy/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/ca_custom_root/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/ecc_signature_algorithm/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/chiron/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/filebased_tls_origination/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/mtls_first_party_jwt/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/mtlsk8sca/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/sds_egress/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/sds_tls_origination/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/webhook/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/helm/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/operator/...  -istio.test.skipVM true -p 1  -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/pilot/analysis/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/pilot/revisions/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/telemetry/requestclassification/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/telemetry/outboundtrafficpolicy/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/security/ca_custom_root/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/security/ecc_signature_algorithm/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/security/chiron/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/security/filebased_tls_origination/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/security/mtls_first_party_jwt/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/security/mtlsk8sca/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/security/sds_egress/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/security/sds_tls_origination/... -istio.test.skipVM true -p 1 -test.v
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/security/webhook/... -istio.test.skipVM true -p 1 -test.v
 
 if [[ ${CLUSTER} == "eks" ]]; then
  go test -count=1 -tags=integ -timeout 30m ./tests/integration/telemetry/stats/... -run='TestStatsFilter|TestSetup|TestIstioctlMetrics|TestStatsFilter|TestWASMTcpMetric|TestWasmStatsFilter|TestMain|TestCustomizeMetrics' -istio.test.skipVM true -p 1 -test.v
