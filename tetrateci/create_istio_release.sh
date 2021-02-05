@@ -7,7 +7,7 @@ set -o pipefail
 # Temporary thing, we should be moving to a custom runner instead.
 echo "Deleting /usr/share/dotnet to reclaim space"
 [ -d "/usr/share/dotnet" ] && sudo rm -rf /usr/share/dotnet
-echo "Deletetion complete"
+echo "Deletion complete"
 
 if [[ ${BUILD} == "fips" ]]; then
     ./tetrateci/setup_boring_go.sh
@@ -16,16 +16,16 @@ fi
 # if length $TEST is zero we are making a release
 if [[ -z TEST ]]; then
     # since we are building the final release
-    echo "  - archive" >> tetrateci/manifest.yaml.in
+    echo "  - archive" >> ./tetrateci/manifest.yaml.in
 fi
 
 export ISTIO_VERSION=$TAG
 
 sudo gem install fpm
 sudo apt-get install go-bindata -y
-envsubst < ./istio/tetrateci/manifest.yaml.in > ./release-builder/manifest.yaml
 cd ..
 git clone https://github.com/istio/release-builder --depth=1
+envsubst < ./istio/tetrateci/manifest.yaml.in > ./release-builder/manifest.yaml
 cd release-builder
 cp -r ../istio .
 # export IMAGE_VERSION=$(curl https://raw.githubusercontent.com/istio/test-infra/master/prow/config/jobs/release-builder.yaml | grep "image: gcr.io" | head -n 1 | cut -d: -f3)
