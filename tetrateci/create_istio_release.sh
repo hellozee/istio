@@ -12,6 +12,8 @@ echo "Deletetion complete"
 export OLDGOROOT=$GOROOT
 export OLDPATH=$PATH
 
+echo "TEST flag is \'$TEST\'"
+
 if [[ ${BUILD} == "fips" ]]; then
     export GOLANG_VERSION=1.15.7b5
     echo "Fetching FIPS compliant Go"
@@ -36,16 +38,22 @@ sudo apt-get install go-bindata -y
 cd ..
 git clone https://github.com/istio/release-builder --depth=1
 
+echo "Generating the docker manifest"
 envsubst < ./istio/tetrateci/manifest.yaml.in > ./release-builder/manifest.docker.yaml
+echo "  - docker" >> ./release-builder/manifest.archive.yaml
 
 # if length $TEST is zero we are making a release
 if [[ -z TEST ]]; then
     # since we are building the final release
-    echo "  - archive" >> tetrateci/manifest.yaml.in
+    echo "Generating the archive manifest"
     envsubst < ./istio/tetrateci/manifest.yaml.in > ./release-builder/manifest.archive.yaml
+    echo "  - archive" >> ./release-builder/manifest.archive.yaml
 fi
 
+echo "Getting into release builder"
 cd release-builder
+
+echo "Copying istio directory"
 cp -r ../istio .
 # export IMAGE_VERSION=$(curl https://raw.githubusercontent.com/istio/test-infra/master/prow/config/jobs/release-builder.yaml | grep "image: gcr.io" | head -n 1 | cut -d: -f3)
 # make shell TODO: https://github.com/tetratelabs/getistio/issues/82
@@ -55,6 +63,7 @@ mkdir /tmp/istio-release
 #go run main.go publish --release /tmp/istio-release/out --dockerhub $HUB
 
 if [[ -z TEST ]]; then
+    echo "Starting archive build"
     echo "Cleaning up the docker build...."
 
     [ -d "/tmp/istio-release" ] && sudo rm -rf /tmp/istio-release
@@ -82,3 +91,5 @@ if [[ -z TEST ]]; then
     curl -X POST -u$BINTRAY_USER:$API_KEY $BINTRAY_API/$TAG/publish -o /tmp/curl.out
     cat /tmp/curl.out
 fi
+
+echo "Done building and pushing the artifacts."
