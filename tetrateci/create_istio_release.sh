@@ -40,7 +40,7 @@ git clone https://github.com/istio/release-builder --depth=1
 
 echo "Generating the docker manifest"
 envsubst < ./istio/tetrateci/manifest.yaml.in > ./release-builder/manifest.docker.yaml
-echo "  - docker" >> ./release-builder/manifest.archive.yaml
+echo "  - docker" >> ./release-builder/manifest.docker.yaml
 
 # if length $TEST is zero we are making a release
 if [[ -z $TEST ]]; then
