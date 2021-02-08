@@ -12,10 +12,10 @@ echo "Deletetion complete"
 export OLDGOROOT=$GOROOT
 export OLDPATH=$PATH
 
-echo "TEST flag is \'$TEST\'"
+echo "TEST flag is '$TEST'"
 
 if [[ ${BUILD} == "fips" ]]; then
-    sudo ./setup_boring_go.sh
+    sudo ./tetrateci/setup_boring_go.sh
     export ISTIO_ENVOY_WASM_BASE_URL=https://storage.googleapis.com/istio-build/proxy 
     export ISTIO_ENVOY_BASE_URL=https://storage.googleapis.com/getistio-build/proxy-fips
     exit
