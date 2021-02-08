@@ -43,7 +43,7 @@ envsubst < ./istio/tetrateci/manifest.yaml.in > ./release-builder/manifest.docke
 echo "  - docker" >> ./release-builder/manifest.archive.yaml
 
 # if length $TEST is zero we are making a release
-if [[ -z TEST ]]; then
+if [[ -z $TEST ]]; then
     # since we are building the final release
     echo "Generating the archive manifest"
     envsubst < ./istio/tetrateci/manifest.yaml.in > ./release-builder/manifest.archive.yaml
@@ -62,7 +62,7 @@ mkdir /tmp/istio-release
 # go run main.go validate --release /tmp/istio-release/out # seems like it fails if not all the targets are generated
 #go run main.go publish --release /tmp/istio-release/out --dockerhub $HUB
 
-if [[ -z TEST ]]; then
+if [[ -z $TEST ]]; then
     echo "Starting archive build"
     echo "Cleaning up the docker build...."
 
