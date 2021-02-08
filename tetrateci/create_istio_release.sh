@@ -13,7 +13,7 @@ export OLDGOROOT=$GOROOT
 export OLDPATH=$PATH
 
 if [[ ${BUILD} == "fips" ]]; then
-    ./tetrateci/setup_boring_go.sh
+    sudo ./tetrateci/setup_boring_go.sh
     export ISTIO_ENVOY_WASM_BASE_URL=https://storage.googleapis.com/istio-build/proxy 
     export ISTIO_ENVOY_BASE_URL=https://storage.googleapis.com/getistio-build/proxy-fips
 fi
