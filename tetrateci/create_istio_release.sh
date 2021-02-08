@@ -32,6 +32,10 @@ export ISTIO_VERSION=$TAG
 
 sudo gem install fpm
 sudo apt-get install go-bindata -y
+
+cd ..
+git clone https://github.com/istio/release-builder --depth=1
+
 envsubst < ./istio/tetrateci/manifest.yaml.in > ./release-builder/manifest.docker.yaml
 
 # if length $TEST is zero we are making a release
@@ -41,8 +45,6 @@ if [[ -z TEST ]]; then
     envsubst < ./istio/tetrateci/manifest.yaml.in > ./release-builder/manifest.archive.yaml
 fi
 
-cd ..
-git clone https://github.com/istio/release-builder --depth=1
 cd release-builder
 cp -r ../istio .
 # export IMAGE_VERSION=$(curl https://raw.githubusercontent.com/istio/test-infra/master/prow/config/jobs/release-builder.yaml | grep "image: gcr.io" | head -n 1 | cut -d: -f3)
