@@ -38,7 +38,7 @@ fi
 # go test -count=1 -tags=integ -timeout 30m ./tests/integration/telemetry/stats/... -p 1 -test.v -run "TestDashboard|TestSetup|TestStatsFilter|TestStatsTCPFilter|TestTcpMetric|TestWasmStatsFilter|TestWASMTcpMetric"
 # go test -count=1 -tags=integ -timeout 30m ./tests/integration/telemetry/tracing/... -p 1 -test.v
 
-go test -count=1 -tags=integ -timeout 30m ./tests/integration/security/.  -p 1 -test.v
+# go test -count=1 -tags=integ -timeout 30m ./tests/integration/security/.  -p 1 -test.v
 go test -count=1 -tags=integ ./tests/integration/security/ca_custom_root/...  -p 1 -test.v
 go test -count=1 -tags=integ ./tests/integration/security/ecc_signature_algorithm/...  -p 1 -test.v
 go test -count=1 -tags=integ ./tests/integration/security/chiron/...  -p 1 -test.v
