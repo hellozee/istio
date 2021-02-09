@@ -10,7 +10,7 @@ set -o pipefail
 # Temporary thing, we should be moving to a custom runner instead.
 echo "Deleting /usr/share/dotnet to reclaim space"
 [ -d "/usr/share/dotnet" ] && sudo rm -rf /usr/share/dotnet
-echo "Deletetion complete"
+echo "Deletion complete"
 
 # Saving the old path cause we switch them in case of fips build for the boring go.
 export OLDGOROOT=$GOROOT
