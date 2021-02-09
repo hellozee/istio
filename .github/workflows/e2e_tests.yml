@@ -326,6 +326,6 @@ jobs:
           TAG: ${{ steps.get_tag.outputs.TAG }}
           BINTRAY_API: ${{ secrets.BINTRAY_ARCHIVE_API }}
           # if the tag contains fips we are doing a fips build
-          BUILD: ${{ contains(github.event.ref, 'fips') && "fips" }}
+          BUILD: ${{ contains(github.event.ref, 'fips') && 'fips' }}
         # not using the official build container 
         run: ./tetrateci/create_istio_release.sh
