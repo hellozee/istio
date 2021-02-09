@@ -31,7 +31,8 @@ fi
 # go test -count=1 -tags=integ ./tests/integration/pilot/cni/... ${CLUSTERFLAGS} -p 1 -test.v
 
 # go test -count=1 -tags=integ ./tests/integration/telemetry/requestclassification/...  -p 1 -test.v
-go test -count=1 -tags=integ -timeout 30m  ./tests/integration/telemetry/outboundtrafficpolicy/...  -p 1 -test.v
+# there is some problem with the prometheus
+# go test -count=1 -tags=integ -timeout 30m  ./tests/integration/telemetry/outboundtrafficpolicy/...  -p 1 -test.v
 go test -count=1 -tags=integ -timeout 30m ./tests/integration/telemetry/policy/. -test.v
 # TestIstioCtlMetrics fails everywhere
 go test -count=1 -tags=integ -timeout 30m ./tests/integration/telemetry/stats/... -p 1 -test.v -run "TestDashboard|TestSetup|TestStatsFilter|TestStatsTCPFilter|TestTcpMetric|TestWasmStatsFilter|TestWASMTcpMetric"
