@@ -176,7 +176,7 @@ jobs:
 
   aks-e2e-test:
     ## TODO: temporarily disabling it till credentials are set
-    #if: ${{ false }}
+    if: ${{ false }}
     name: aks-e2e-test
     runs-on: ubuntu-latest
     #needs: [create-test-images]

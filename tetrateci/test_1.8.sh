@@ -26,8 +26,8 @@ fi
 go test -count=1 -tags=integ ./tests/integration/helm/...  -p 1 -test.v
 
 go test -count=1 -tags=integ ./tests/integration/operator/...   -p 1  -test.v
-# TestVmOSPost fails in gke
-go test -count=1 -tags=integ -timeout 30m ./tests/integration/pilot/ -run='TestAddToAndRemoveFromMesh|TestAllNamespaces|TestAuthZCheck|TestDescribe|TestDirectoryWithoutRecursion|TestDirectoryWithRecursion|TestEmptyCluster|TestEnsureNoMissingCRDs|TestErrorLine|TestFileAndKubeCombined|TestFileOnly|TestGateway|TestIngress|TestInvalidFileError|TestJsonInputFile|TestJsonOutput|TestKubeOnly|TestLocality|TestMain|TestMirroring|TestMirroringExternalService|TestProxyConfig|TestProxyStatus|TestTimeout|TestTraffic|TestValidation|TestVersion|TestWait|TestWebhook' -istio.test.skipVM true  -p 1 -test.v
+# TestVmOSPost and TestProxyStatus (1.16 only) fails in gke
+go test -count=1 -tags=integ -timeout 30m ./tests/integration/pilot/ -run='TestAddToAndRemoveFromMesh|TestAllNamespaces|TestAuthZCheck|TestDescribe|TestDirectoryWithoutRecursion|TestDirectoryWithRecursion|TestEmptyCluster|TestEnsureNoMissingCRDs|TestErrorLine|TestFileAndKubeCombined|TestFileOnly|TestGateway|TestIngress|TestInvalidFileError|TestJsonInputFile|TestJsonOutput|TestKubeOnly|TestLocality|TestMain|TestMirroring|TestMirroringExternalService|TestProxyConfig|TestTimeout|TestTraffic|TestValidation|TestVersion|TestWait|TestWebhook' -istio.test.skipVM true  -p 1 -test.v
 go test -count=1 -tags=integ ./tests/integration/pilot/analysis/...  -p 1 -test.v
 go test -count=1 -tags=integ ./tests/integration/pilot/revisions/...  -p 1 -test.v
 go test -count=1 -tags=integ ./tests/integration/pilot/endpointslice/. -istio.test.skipVM true  -p 1 -test.v
