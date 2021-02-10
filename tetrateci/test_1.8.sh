@@ -4,8 +4,8 @@ set -e
 # need this variable to run the tests outside GOPATH
 export REPO_ROOT=$(pwd)
 
-export HUB=gcr.io/tetratelabs/getistio
-export TAG=1.8.2
+export HUB=tetrate-docker-getistio-docker.bintray.io
+export TAG=1.8.2-tetrate-v0
 
 if [[ ${CLUSTER} == "gke" ]]; then
   # Overlay CNI Parameters for GCP : https://github.com/tetratelabs/getistio/issues/76
