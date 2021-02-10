@@ -4,6 +4,9 @@ set -e
 # need this variable to run the tests outside GOPATH
 export REPO_ROOT=$(pwd)
 
+export HUB=tetrate-docker-getistio-docker.bintray.io
+export TAG=1.7.7-tetrate-v0
+
 if [[ ${CLUSTER} == "gke" ]]; then
   # Overlay CNI Parameters for GCP : https://github.com/tetratelabs/getistio/issues/76
   pip install pyyaml --user && ./tetrateci/gen_iop.py
@@ -37,8 +40,7 @@ go test -count=1 -timeout 30m ./tests/integration/mixer/telemetry/... -p 1 -test
 
 go test -count=1 ./tests/integration/telemetry/outboundtrafficpolicy -p 1 -test.v
 go test -count=1 -timeout 30m ./tests/integration/telemetry/. -p 1 -test.v
-# TestIstioCtlMetrics fails everywhere
-go test -count=1 -timeout 30m ./tests/integration/telemetry/stats/... -p 1 -test.v -run "TestStatsFilter|TestSetup|TestWasmStatsFilter|TestTcpMetric"
+go test -count=1 -timeout 30m ./tests/integration/telemetry/stats/... -p 1 -test.v
 go test -count=1 -tags=integ ./tests/integration/telemetry/tracing/...  -p 1 -test.v
 
 go test -count=1 ./tests/integration/security/ca_custom_root/... -p 1 -test.v
