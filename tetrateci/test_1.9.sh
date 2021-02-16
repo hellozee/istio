@@ -8,7 +8,7 @@ git apply tetrateci/patches/common/disable-vmospost.1.9.patch
 git apply tetrateci/patches/common/disable-stackdriver.1.9.patch
 
 if $(grep -q "1.17" <<< ${VERSION} ); then
-  git apply tetrateci/patches/common/disable-endpointslice.1.8.patch
+  git apply tetrateci/patches/common/disable-endpointslice.1.9.patch
 fi
 
 if [[ ${CLUSTER} == "gke" ]]; then
@@ -22,4 +22,7 @@ if [[ ${CLUSTER} == "eks" ]]; then
   git apply tetrateci/patches/eks/eks-ingress.1.9.patch
 fi
 
-go test -count=1 ./tests/integration/... ${CLUSTERFLAGS} -p 1 -test.v -tags="integ" -timeout 30m
+export HUB=hellozee-docker-istio-testing.bintray.io
+export TAG=1.9.0-test
+
+go test -count=1 ./tests/integration/... ${CLUSTERFLAGS} -p 1 -test.v -tags="integ" -timeout 1h
