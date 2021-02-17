@@ -23,4 +23,15 @@ fi
 export TAG=1.9.0-test
 export HUB=hellozee-docker-istio-testing.bintray.io
 
-go test -p 1 -test.v -tags=integ $(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples) -timeout 30m --istio.test.select=-postsubmit,-flaky,-multicluster
+PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster)
+
+for package in $PACKAGES; do
+  n=0
+  until [ "$n" -ge 3 ]
+  do
+    n=$((n+1))
+    sleep 15
+    echo "========================================================TRY $n========================================================"
+    go test -count=1 -p 1 -test.v -tags=integ $package -timeout 30m --istio.test.select=-postsubmit,-flaky,-multicluster ${CLUSTERFLAGS} && break
+  done
+done
