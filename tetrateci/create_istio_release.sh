@@ -49,7 +49,7 @@ fi
 
 echo "Getting into release builder"
 cd release-builder
-git co origin/release-1.9
+git checkout  origin/release-1.9
 
 echo "Copying istio directory"
 cp -r ../istio .
