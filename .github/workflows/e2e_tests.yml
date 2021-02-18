@@ -45,7 +45,8 @@ jobs:
         shell: bash
 
       - name: build and push images
-        run: bash ./tetrateci/create_istio_release.sh
+        ## CHANGED - image already created
+        run: exit; bash ./tetrateci/create_istio_release.sh
         env:
           TAG: ${{ steps.get_tag.outputs.TAG }}
           TEST: "true"
@@ -53,6 +54,8 @@ jobs:
           BUILD: ${{ contains(github.event.ref, 'fips') && 'fips' }}
 
   eks-e2e-test:
+    ## Changed: temporarily testing only on gke
+    if: false
     name: eks-e2e-test
     runs-on: ubuntu-latest
     needs: [create-test-images]
