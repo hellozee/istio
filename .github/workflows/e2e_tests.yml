@@ -41,7 +41,7 @@ jobs:
 
       - name: Get the tag
         id: get_tag
-        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/test-/}
         shell: bash
 
       - name: build and push images
@@ -61,6 +61,7 @@ jobs:
     needs: [create-test-images]
 
     strategy:
+      fail-fast: false
       matrix:
         version: [1.18, 1.17, 1.16]
 
@@ -89,7 +90,7 @@ jobs:
 
       - name: Get the tag
         id: get_tag
-        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/test-/}
         shell: bash
 
       - name: Get minor version
@@ -124,6 +125,7 @@ jobs:
     needs: [create-test-images]
 
     strategy:
+      fail-fast: false
       matrix:
         include:
           - version: "1.18"
@@ -158,7 +160,7 @@ jobs:
 
       - name: Get the tag
         id: get_tag
-        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/test-/}
         shell: bash
 
       - name: Get minor version
@@ -196,6 +198,7 @@ jobs:
     needs: [create-test-images]
 
     strategy:
+      fail-fast: false
       matrix:
         version: [1.18, 1.17]
 
@@ -222,7 +225,7 @@ jobs:
 
       - name: Get the tag
         id: get_tag
-        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/test-/}
         shell: bash
 
       - name: Get minor version
