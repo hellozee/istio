@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+export TAG=1.9.0-tetratefips-v0
+export HUB=getistio
+
 ./tetrateci/setup_go.sh
 
 echo "Applying patches...."
