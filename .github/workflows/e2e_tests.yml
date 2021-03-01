@@ -69,7 +69,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [1.18]
+        version: [1.17]
 
     steps:
       - name: checkout
@@ -133,8 +133,8 @@ jobs:
             channel: "regular"
           - version: "1.17"
             channel: "stable"
-          - version: "1.16"
-            channel: "stable"
+          #- version: "1.16"
+          #  channel: "stable"
     
     steps:
       - name: checkout
@@ -188,7 +188,6 @@ jobs:
 
   aks-e2e-test:
     ## TODO: temporarily disabling it till credentials are set
-    if: false
     name: aks-e2e-test
     runs-on: ubuntu-latest
     needs: [create-test-images]
@@ -196,7 +195,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [1.18, 1.17]
+        version: [1.18]
 
     steps:
       - name: checkout
