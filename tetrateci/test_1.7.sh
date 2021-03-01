@@ -31,6 +31,9 @@ echo "Starting Testing"
 
 export GODEBUG=x509ignoreCN=0
 
+export HUB=istio
+export TAG=1.7.8
+
 echo "Starting Testing"
 
 for package in $PACKAGES; do
