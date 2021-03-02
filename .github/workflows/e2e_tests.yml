@@ -69,7 +69,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [1.17]
+        version: [1.16]
 
     steps:
       - name: checkout
@@ -190,7 +190,7 @@ jobs:
     ## TODO: temporarily disabling it till credentials are set
     name: aks-e2e-test
     runs-on: ubuntu-latest
-    needs: [create-test-images]
+    #needs: [create-test-images]
 
     strategy:
       fail-fast: false
