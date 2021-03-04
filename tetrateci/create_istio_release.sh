@@ -26,6 +26,7 @@ fi
 
 # HACK : This is needed during istio build for istiod to serve version command
 export ISTIO_VERSION=$TAG
+export BUILD_WITH_CONTAINER=0
 
 sudo gem install fpm
 sudo apt-get install go-bindata -y
@@ -55,6 +56,11 @@ cp -r ../istio .
 mkdir /tmp/istio-release
 go run main.go build --manifest manifest.docker.yaml
 # go run main.go validate --release /tmp/istio-release/out # seems like it fails if not all the targets are generated
+
+CONTAINER_ID=$(docker create $HUB/pilot:$TAG)
+docker cp $CONTAINER_ID:/usr/local/bin/pilot-discovery pilot-bin
+echo "Images are built with: $(go version pilot-bin)"
+
 go run main.go publish --release /tmp/istio-release/out --dockerhub $HUB
 
 if [[ -z $TEST ]]; then
