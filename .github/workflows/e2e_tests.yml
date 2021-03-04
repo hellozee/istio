@@ -41,8 +41,15 @@ jobs:
 
       - name: Get the tag
         id: get_tag
-        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/test-/}
         shell: bash
+
+      - name: Get minor version
+        id: get_minor_ver
+        run: echo ::set-output name=REL_BRANCH_VER::$(echo $TAG | grep -Eo '[0-9]+\.[0-9]+')
+        shell: bash
+        env:
+          TAG: ${{ steps.get_tag.outputs.TAG }}
 
       - name: build and push images
         run: bash ./tetrateci/create_istio_release.sh
@@ -51,6 +58,7 @@ jobs:
           TEST: "true"
           # if the tag contains fips we are doing a fips build
           BUILD: ${{ contains(github.event.ref, 'fips') && 'fips' }}
+          REL_BRANCH_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
 
   eks-e2e-test:
     name: eks-e2e-test
@@ -58,8 +66,9 @@ jobs:
     needs: [create-test-images]
 
     strategy:
+      fail-fast: false
       matrix:
-        version: [1.18, 1.17, 1.16]
+        version: [1.19, 1.18, 1.17, 1.16]
 
     steps:
       - name: checkout
@@ -72,21 +81,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION  }}
 
-      - name: set up go 1.15
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.15
-
-      - uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
       - name: Get the tag
         id: get_tag
-        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/test-/}
         shell: bash
 
       - name: Get minor version
@@ -96,10 +93,18 @@ jobs:
         env:
           TAG: ${{ steps.get_tag.outputs.TAG }}
 
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}-go-
+
       - name: eks-cluster-create
         run: bash ./tetrateci/create_eks_cluster.sh
         env:
           VER: ${{ matrix.version }}
+          MINOR_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
 
       - name: integration-tests
         run: bash ./tetrateci/test_${REL_BRANCH_VER}.sh
@@ -114,6 +119,7 @@ jobs:
         run: bash ./tetrateci/cleanup_eks_cluster.sh
         env:
           VER: ${{ matrix.version }}
+          MINOR_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
   
   gke-e2e-test:
     name: gke-e2e-test
@@ -121,12 +127,15 @@ jobs:
     needs: [create-test-images]
 
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - version: "1.18"
+          - version: "1.19"
             channel: "rapid"
-          - version: "1.17"
+          - version: "1.18"
             channel: "regular"
+          - version: "1.17"
+            channel: "stable"
           - version: "1.16"
             channel: "stable"
     
@@ -141,21 +150,9 @@ jobs:
           service_account_key: ${{ secrets.GCP_SA_KEY }}
           export_default_credentials: true
 
-      - name: set up go 1.15
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.15
-
-      - uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
       - name: Get the tag
         id: get_tag
-        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/test-/}
         shell: bash
 
       - name: Get minor version
@@ -165,11 +162,19 @@ jobs:
         env:
           TAG: ${{ steps.get_tag.outputs.TAG }}
 
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}-go-
+
       - name: gke-cluster-create
         run: bash ./tetrateci/create_gke_cluster.sh
         env:
           VER: ${{ matrix.version }}
           CHAN: ${{ matrix.channel  }}
+          MINOR_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
 
       - name: integration-tests
         run: bash ./tetrateci/test_${REL_BRANCH_VER}.sh
@@ -184,6 +189,7 @@ jobs:
         run: bash ./tetrateci/cleanup_gke_cluster.sh
         env:
           VER: ${{ matrix.version }}
+          MINOR_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
 
   aks-e2e-test:
     ## TODO: temporarily disabling it till credentials are set
@@ -193,8 +199,9 @@ jobs:
     needs: [create-test-images]
 
     strategy:
+      fail-fast: false
       matrix:
-        version: [1.18, 1.17]
+        version: [1.20, 1.19, 1.18, 1.17]
 
     steps:
       - name: checkout
@@ -205,21 +212,9 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: set up go 1.15
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.15
-
-      - uses: actions/cache@v2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
       - name: Get the tag
         id: get_tag
-        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/}
+        run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/test-/}
         shell: bash
 
       - name: Get minor version
@@ -229,11 +224,19 @@ jobs:
         env:
           TAG: ${{ steps.get_tag.outputs.TAG }}
 
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}-go-
+
       - name: aks-cluster-create
         run: bash ./tetrateci/create_aks_cluster.sh
         env:
           VER: ${{ matrix.version }}
           RESOURCE: ${{ secrets.AZURE_RESOURCE }}
+          MINOR_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
 
       - name: integration-tests
         run: bash ./tetrateci/test_${REL_BRANCH_VER}.sh
@@ -249,6 +252,7 @@ jobs:
         env:
           VER: ${{ matrix.version }}
           RESOURCE: ${{ secrets.AZURE_RESOURCE }}
+          MINOR_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
     
   create-new-tag:
     name: create-new-tag
@@ -303,12 +307,12 @@ jobs:
         run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\/test-/}
         shell: bash
 
-      - name: set up go 1.15
-        uses: actions/setup-go@v1
-        # cause we setup go ourselves otherwise
-        if: ${{ !contains(github.event.ref, 'fips') }}
-        with:
-          go-version: 1.15
+      - name: Get minor version
+        id: get_minor_ver
+        run: echo ::set-output name=REL_BRANCH_VER::$(echo $TAG | grep -Eo '[0-9]+\.[0-9]+')
+        shell: bash
+        env:
+          TAG: ${{ steps.get_tag.outputs.TAG }}
 
       - name: run release builder
         env:
@@ -318,5 +322,6 @@ jobs:
           BINTRAY_API: ${{ secrets.BINTRAY_ARCHIVE_API }}
           # if the tag contains fips we are doing a fips build
           BUILD: ${{ contains(github.event.ref, 'fips') && 'fips' }}
+          REL_BRANCH_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
         # not using the official build container 
         run: ./tetrateci/create_istio_release.sh

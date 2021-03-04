@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+./tetrateci/version_check.py && exit
 
 set -o errexit
 set -o pipefail
@@ -26,4 +28,4 @@ SUFFIX=$(sed 's/\.//g' <<< $VER)
 CLUSTER_NAME="test-istio-$SHA8-$SUFFIX"
 
 echo "creating a eks cluster with \"$CLUSTER_NAME\" name..."
-eksctl create cluster --name $CLUSTER_NAME --version $VER
+eksctl create cluster --name $CLUSTER_NAME --version $VER --nodes 3 --node-type m5.xlarge

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # If fips build is enabled then we switch to boring go for the docker images but use the default 
 # go for building the istioctl binary
@@ -12,27 +12,26 @@ echo "Deleting /usr/share/dotnet to reclaim space"
 [ -d "/usr/share/dotnet" ] && sudo rm -rf /usr/share/dotnet
 echo "Deletetion complete"
 
-# Saving the old path cause we switch them in case of fips build for the boring go.
-export OLDGOROOT=$GOROOT
-export OLDPATH=$PATH
-
 # The test flag is to check whether we are building images for testing or release
 # in case of release we build the istioctl too which we don't need in case of testing.
 echo "TEST flag is '$TEST'"
 
 if [[ ${BUILD} == "fips" ]]; then
-    sudo ./tetrateci/setup_boring_go.sh
+    source ./tetrateci/setup_boring_go.sh
     export ISTIO_ENVOY_WASM_BASE_URL=https://storage.googleapis.com/istio-build/proxy 
     export ISTIO_ENVOY_BASE_URL=https://storage.googleapis.com/getistio-build/proxy-fips
+else
+    source ./tetrateci/setup_go.sh
 fi
 
+# HACK : This is needed during istio build for istiod to serve version command
 export ISTIO_VERSION=$TAG
 
 sudo gem install fpm
 sudo apt-get install go-bindata -y
-
+export BRANCH=release-${REL_BRANCH_VER}
 cd ..
-git clone https://github.com/istio/release-builder --depth=1
+git clone https://github.com/istio/release-builder --branch ${BRANCH}
 
 echo "Generating the docker manifest"
 envsubst < ./istio/tetrateci/manifest.yaml.in > ./release-builder/manifest.docker.yaml
@@ -65,10 +64,6 @@ if [[ -z $TEST ]]; then
     [ -d "/tmp/istio-release" ] && sudo rm -rf /tmp/istio-release
 
     mkdir /tmp/istio-release
-
-    echo "Resetting variables PATH=$OLDPATH GOROOT=$OLDGOROOT"
-    export PATH=$OLDPATH
-    export GOROOT=$OLDGOROOT
 
     echo "Building archives..."
     go run main.go build --manifest manifest.archive.yaml
