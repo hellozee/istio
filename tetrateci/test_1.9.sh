@@ -3,6 +3,9 @@ set -e
 
 source ./tetrateci/setup_go.sh
 
+export HUB=istio
+export TAG=1.9.1
+
 echo "Applying patches...."
 git apply tetrateci/patches/common/disable-dashboard.1.9.patch
 git apply tetrateci/patches/common/disable-ratelimiting.1.9.patch
