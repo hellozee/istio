@@ -2,6 +2,9 @@
 ./tetrateci/version_check.py && exit
 set -e
 
+export HUB=getistiotesting
+export TAG=1.8.4-tetrate-v0
+
 # need this variable to run the tests outside GOPATH
 export REPO_ROOT=$(pwd)
 echo "Set REPO_ROOT=$REPO_ROOT"
