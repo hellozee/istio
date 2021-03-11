@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
+./tetrateci/version_check.py && exit
 set -e
 
 # need this variable to run the tests outside GOPATH
 export REPO_ROOT=$(pwd)
 echo "Set REPO_ROOT=$REPO_ROOT"
-./tetrateci/setup_go.sh
+source ./tetrateci/setup_go.sh
 
 echo "Applying patches...."
 git apply tetrateci/patches/common/disable-dashboard.1.8.patch
 git apply tetrateci/patches/common/disable-ratelimiting.1.8.patch
-git apply tetrateci/patches/common/disable-vmospost.1.8.patch
-git apply tetrateci/patches/common/disable-stackdriver.1.8.patch
 
 if $(grep -q "1.17" <<< ${VERSION} ); then
   git apply tetrateci/patches/common/disable-endpointslice.1.8.patch
@@ -36,12 +35,10 @@ if [[ ${CLUSTER} == "aks" ]]; then
 fi
 
 if $(grep -q "1.17" <<< ${VERSION} ); then
-  PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster | grep -v /endpointslice)
+  PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster | grep -v /endpointslice | grep -v /stackdriver)
 else
-  PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster)
+  PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster | grep -v /stackdriver)
 fi
-
-echo "Starting Testing"
 
 echo "Starting Testing"
 
