@@ -69,7 +69,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [1.19]
+        version: [1.18]
 
     steps:
       - name: checkout
@@ -131,14 +131,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - version: "1.19"
-            channel: "rapid"
-          - version: "1.18"
-            channel: "regular"
+          #- version: "1.19"
+          #  channel: "rapid"
+          #- version: "1.18"
+          #  channel: "regular"
           - version: "1.17"
             channel: "stable"
-          - version: "1.16"
-            channel: "stable"
+          #- version: "1.16"
+          #  channel: "stable"
     
     steps:
       - name: checkout
@@ -203,7 +203,7 @@ jobs:
       fail-fast: false
       matrix:
         #version: [1.20, 1.19, 1.18, 1.17]
-        version: [1.20]
+        version: [1.19]
 
     steps:
       - name: checkout
@@ -244,7 +244,7 @@ jobs:
         run: bash ./tetrateci/test_${ISTIO_MINOR_VER}.sh
         env:
           TAG: ${{ steps.get_tag.outputs.TAG }}
-          ISTIO_MINOR_VERSION: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
+          ISTIO_MINOR_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
           CLUSTER: aks
           K8S_VERSION: ${{ matrix.version }}
 
