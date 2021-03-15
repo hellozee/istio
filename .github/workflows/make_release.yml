@@ -7,9 +7,9 @@ on:
         description: Manual Tag
         required: true
       type:
-        description: Build Type [fips or leave empty]
+        description: Build Type [fips or default]
         required: true
-        default: ""
+        default: "default"
 
 jobs:
   make_release:    
@@ -32,12 +32,12 @@ jobs:
           username: ${{ secrets.BINTRAY_USER }}
           password: ${{ secrets.BINTRAY_API_KEY }}
 
-      - name: set up go 1.15
-        uses: actions/setup-go@v1
-        # cause we setup go ourselves otherwise
-        if: ${{ !contains(github.event.ref, 'fips') }}
-        with:
-          go-version: 1.15
+      - name: Get minor version
+        id: get_minor_ver
+        run: echo ::set-output name=REL_BRANCH_VER::$(echo $TAG | grep -Eo '[0-9]+\.[0-9]+')
+        shell: bash
+        env:
+          TAG: ${{ github.event.inputs.tag }}
 
       - name: Run release builder
         env:
@@ -46,4 +46,5 @@ jobs:
           TAG: ${{ github.event.inputs.tag }}
           BINTRAY_API: ${{ secrets.BINTRAY_ARCHIVE_API }}
           BUILD: ${{ github.event.inputs.type }}
+          REL_BRANCH_VER: ${{ steps.get_minor_ver.outputs.REL_BRANCH_VER }}
         run: bash ./tetrateci/create_istio_release.sh
