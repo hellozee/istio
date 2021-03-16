@@ -1,27 +1,48 @@
-#!env bash
+#!/usr/bin/env bash
+./tetrateci/version_check.py && exit
 set -e
 
+# need this variable to run the tests outside GOPATH
+export REPO_ROOT=$(pwd)
+echo "Set REPO_ROOT=$REPO_ROOT"
+source ./tetrateci/setup_go.sh
+
+echo "Applying patches...."
+git apply tetrateci/patches/common/disable-dashboard.1.7.patch
+git apply tetrateci/patches/common/disable-stackdriver.1.7.patch
+
 if [[ ${CLUSTER} == "gke" ]]; then
-  # Overlay CNI Parameters for GCP : https://github.com/tetratelabs/getistio/issues/76
+  # Overlay CNI Parameters for GCP : https://github.com/tetratelabs/getistio-old/issues/76
+  echo "Generating operator config for GKE"
   pip install pyyaml --user && ./tetrateci/gen_iop.py
   CLUSTERFLAGS="-istio.test.kube.helm.iopFile $(pwd)/tetrateci/iop-gke-integration.yml"
-  git apply tetrateci/chiron-gke.patch
+
+  echo "Applying GKE specific patches...."
+  git apply tetrateci/patches/gke/chiron-gke.patch
+  git apply tetrateci/patches/gke/disable-vmospost-gke.1.7.patch
 fi
 
-go test -count=1 -tags=integ ./tests/integration/operator/...  -p 1  -test.v
-go test -count=1 -tags=integ -timeout 30m -run='TestEmptyCluster|TestFileOnly|TestDirectoryWithoutRecursion|TestDirectoryWithRecursion|TestInvalidFileError|TestJsonInputFile|TestJsonOutput|TestKubeOnly|TestFileAndKubeCombined|TestAllNamespaces|TestTimeout|TestErrorLine|TestWait|TestVersion|TestDescribe|TestAddToAndRemoveFromMesh|TestProxyConfig|TestProxyStatus|TestAuthZCheck|TestLocality|TestMain|TestMirroring|TestMirroringExternalService|TestTproxy|TestValidation|TestEnsureNoMissingCRDs|TestWebhook' ./tests/integration/pilot/ -p 1 -test.v 
-go test -count=1 -tags=integ ./tests/integration/pilot/analysis/... -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/pilot/revisions/... -p 1 -test.v
-go test -count=1 -tags=integ -timeout 30m -run='TestStatsFilter|TestStatsTCPFilter|TestSetup|TestIstioctlMetrics|TestTcpMetric|TestStatsFilter|TestWASMTcpMetric|TestWasmStatsFilter|TestMain|TestCustomizeMetrics' ./tests/integration/telemetry/stats/... -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/ca_custom_root/... -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/chiron/... -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/filebased_tls_origination/... -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/mtls_first_party_jwt/... -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/mtlsk8sca/... -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/sds_egress/... -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/sds_tls_origination/... -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/webhook/... -p 1 -test.v
-
-if [[ $CLUSTER != "aks" ]]; then
-  go test -count=1 -tags=integ ./tests/integration/pilot/cni/... ${CLUSTERFLAGS} -p 1 -test.v
+if [[ ${CLUSTER} == "eks" ]]; then
+  echo "Applying Ingress patch for EKS...."
+  git apply tetrateci/patches/eks/eks-ingress.1.7.patch
 fi
+
+PACKAGES=$(go list ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster | grep -v /stackdriver)
+
+echo "Starting Testing"
+
+export GODEBUG=x509ignoreCN=0
+
+for package in $PACKAGES; do
+  n=0
+  until [ "$n" -ge 3 ]
+  do
+    echo "========================================================TESTING $package | TRY $n========================================================"
+    go test -test.v $package -timeout 30m --istio.test.select=-postsubmit,-flaky --istio.test.ci --istio.test.pullpolicy IfNotPresent ${CLUSTERFLAGS} && break || echo "Test Failed: $package"
+    for folder in $(ls -d /tmp/* | grep istio); do sudo rm -rf -- $folder; done
+    n=$((n+1))
+  done
+  [ "$n" -ge 3 ] && exit 1
+done
+
+echo "Testing Done"
