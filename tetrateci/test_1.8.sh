@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+./tetrateci/version_check.py && exit
 set -e
 
 # need this variable to run the tests outside GOPATH
@@ -36,9 +37,9 @@ if [[ ${CLUSTER} == "aks" ]]; then
 fi
 
 if $(grep -q "1.17" <<< ${VERSION} ); then
-  PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster | grep -v /endpointslice)
+  PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster | grep -v /endpointslice | grep -v /stackdriver)
 else
-  PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster)
+  PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster | grep -v /stackdriver)
 fi
 
 echo "Starting Testing"
