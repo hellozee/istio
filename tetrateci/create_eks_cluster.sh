@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+./tetrateci/version_check.py && exit
 
 set -o errexit
 set -o pipefail
@@ -22,8 +24,8 @@ then
 fi
 
 SHA8=$(git rev-parse --short $GITHUB_SHA)
-SUFFIX=$(sed 's/\.//g' <<< $VER)
+SUFFIX=$(sed 's/\.//g' <<< $K8S_VERSION)
 CLUSTER_NAME="test-istio-$SHA8-$SUFFIX"
 
 echo "creating a eks cluster with \"$CLUSTER_NAME\" name..."
-eksctl create cluster --name $CLUSTER_NAME --version $VER
+eksctl create cluster --name $CLUSTER_NAME --version $K8S_VERSION --nodes 3 --node-type m5.xlarge
