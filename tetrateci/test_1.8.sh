@@ -1,28 +1,52 @@
-#!env bash
+#!/usr/bin/env bash
+./tetrateci/version_check.py && exit
 set -e
 
+# need this variable to run the tests outside GOPATH
+export REPO_ROOT=$(pwd)
+echo "Set REPO_ROOT=$REPO_ROOT"
+source ./tetrateci/setup_go.sh
+
+echo "Applying patches...."
+git apply tetrateci/patches/common/increase-dashboard-timeout.1.8.patch
+git apply tetrateci/patches/common/wait-for-envoy.1.8.patch
+git apply tetrateci/patches/common/increase-vm-timeout.1.8.patch
+
 if [[ ${CLUSTER} == "gke" ]]; then
+  echo "Generating operator config for GKE"
   # Overlay CNI Parameters for GCP : https://github.com/tetratelabs/getistio/issues/76
   pip install pyyaml --user && ./tetrateci/gen_iop.py
   CLUSTERFLAGS="-istio.test.kube.helm.iopFile $(pwd)/tetrateci/iop-gke-integration.yml"
-  git apply tetrateci/chiron-gke.patch
+  
+  if $(grep -q "1.17" <<< ${K8S_VERSION} || grep -q "1.16" <<< ${K8S_VERSION}); then
+    echo "Applying GKE specific patches...."
+    git apply tetrateci/patches/gke/chiron-gke.patch
+  fi
 fi
 
-go test -count=1 -tags=integ ./tests/integration/helm/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/operator/...  -istio.test.skipVM true -p 1  -test.v
-go test -count=1 -tags=integ -timeout 30m -run='TestEmptyCluster|TestFileOnly|TestDirectoryWithoutRecursion|TestDirectoryWithRecursion|TestInvalidFileError|TestJsonInputFile|TestJsonOutput|TestKubeOnly|TestFileAndKubeCombined|TestAllNamespaces|TestTimeout|TestErrorLine|TestWait|TestVersion|TestDescribe|TestAddToAndRemoveFromMesh|TestProxyConfig|TestProxyStatus|TestAuthZCheck|TestLocality|TestMain|TestMirroring|TestMirroringExternalService|TestTproxy|TestValidation|TestEnsureNoMissingCRDs|TestWebhook' ./tests/integration/pilot/ -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/pilot/analysis/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/pilot/revisions/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ -timeout 30m -run='TestStatsFilter|TestStatsTCPFilter|TestSetup|TestIstioctlMetrics|TestTcpMetric|TestStatsFilter|TestWASMTcpMetric|TestWasmStatsFilter|TestMain|TestCustomizeMetrics' ./tests/integration/telemetry/stats/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/ca_custom_root/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/chiron/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/filebased_tls_origination/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/mtls_first_party_jwt/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/mtlsk8sca/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/sds_egress/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/sds_tls_origination/... -istio.test.skipVM true -p 1 -test.v
-go test -count=1 -tags=integ ./tests/integration/security/webhook/... -istio.test.skipVM true -p 1 -test.v
-
-if [[ $CLUSTER != "aks" ]]; then
-  go test -count=1 -tags=integ ./tests/integration/pilot/cni/... ${CLUSTERFLAGS} -istio.test.skipVM true -p 1 -test.v
+if [[ ${CLUSTER} == "eks" ]]; then
+  echo "Applying Ingress patch for EKS...."
+  git apply tetrateci/patches/eks/eks-ingress.1.8.patch
 fi
+
+if $(grep -q "1.17" <<< ${K8S_VERSION} ); then
+  PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster | grep -v /endpointslice | grep -v /stackdriver)
+else
+  PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster | grep -v /stackdriver)
+fi
+
+echo "Starting Testing"
+
+for package in $PACKAGES; do
+  n=0
+  until [ "$n" -ge 3 ]
+  do
+    echo "========================================================TESTING $package | TRY $n========================================================"
+    go test -test.v -tags=integ $package -timeout 30m --istio.test.select=-postsubmit,-flaky --istio.test.ci --istio.test.pullpolicy IfNotPresent ${CLUSTERFLAGS} && break || echo "Test Failed: $package"
+    for folder in $(ls -d /tmp/* | grep istio); do sudo rm -rf -- $folder; done
+    n=$((n+1))
+  done
+  [ "$n" -ge 3 ] && exit 1
+done
+
+echo "Testing Done"
