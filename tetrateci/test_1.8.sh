@@ -8,14 +8,9 @@ echo "Set REPO_ROOT=$REPO_ROOT"
 source ./tetrateci/setup_go.sh
 
 echo "Applying patches...."
-git apply tetrateci/patches/common/disable-dashboard.1.8.patch
-git apply tetrateci/patches/common/disable-ratelimiting.1.8.patch
-git apply tetrateci/patches/common/disable-vmospost.1.8.patch
-git apply tetrateci/patches/common/disable-stackdriver.1.8.patch
-
-if $(grep -q "1.17" <<< ${VERSION} ); then
-  git apply tetrateci/patches/common/disable-endpointslice.1.8.patch
-fi
+git apply tetrateci/patches/common/increase-dashboard-timeout.1.8.patch
+git apply tetrateci/patches/common/wait-for-envoy.1.8.patch
+git apply tetrateci/patches/common/increase-vm-timeout.1.8.patch
 
 if [[ ${CLUSTER} == "gke" ]]; then
   echo "Generating operator config for GKE"
@@ -23,8 +18,10 @@ if [[ ${CLUSTER} == "gke" ]]; then
   pip install pyyaml --user && ./tetrateci/gen_iop.py
   CLUSTERFLAGS="-istio.test.kube.helm.iopFile $(pwd)/tetrateci/iop-gke-integration.yml"
   
-  echo "Applying GKE specific patches...."
-  git apply tetrateci/patches/gke/chiron-gke.patch
+  if $(grep -q "1.17" <<< ${K8S_VERSION} || grep -q "1.16" <<< ${K8S_VERSION}); then
+    echo "Applying GKE specific patches...."
+    git apply tetrateci/patches/gke/chiron-gke.patch
+  fi
 fi
 
 if [[ ${CLUSTER} == "eks" ]]; then
@@ -32,11 +29,7 @@ if [[ ${CLUSTER} == "eks" ]]; then
   git apply tetrateci/patches/eks/eks-ingress.1.8.patch
 fi
 
-if [[ ${CLUSTER} == "aks" ]]; then
-  git apply tetrateci/patches/aks/aks-pilot.1.8.patch
-fi
-
-if $(grep -q "1.17" <<< ${VERSION} ); then
+if $(grep -q "1.17" <<< ${K8S_VERSION} ); then
   PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster | grep -v /endpointslice | grep -v /stackdriver)
 else
   PACKAGES=$(go list -tags=integ ./tests/integration/... | grep -v /qualification | grep -v /examples | grep -v /multicluster | grep -v /stackdriver)
