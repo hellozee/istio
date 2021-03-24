@@ -2,8 +2,8 @@
 ./tetrateci/version_check.py && exit
 set -e
 
-export HUB=getistiotesting
-export TAG=1.9.1-tetrate-vtest
+export HUB=istio
+export TAG=1.9.1
 
 source ./tetrateci/setup_go.sh
 
