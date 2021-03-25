@@ -2,8 +2,8 @@
 ./tetrateci/version_check.py && exit
 set -e
 
-export HUB=istio
-export TAG=1.9.1
+export HUB=tetrate-docker-getistio-docker.bintray.io
+export TAG=1.9.1-tetrate-v0
 
 source ./tetrateci/setup_go.sh
 
