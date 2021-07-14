@@ -127,6 +127,16 @@ def install_bookinfo(
                 if conf.traffic_gen_ip == "internal"
                 else "ExternalIP",
             }
+            # Do not try to indent below string
+            spm_services_file.write(f'''
+v1|ratings-{count}|{namespaces['ratings']}|{conf.cluster_name}|-
+*|ratings-{count}|{namespaces['ratings']}|{conf.cluster_name}|-
+v1|productpage-{count}|{namespaces['product']}|{conf.cluster_name}|-
+*|productpage-{count}|{namespaces['product']}|{conf.cluster_name}|-
+v1|reviews-{count}|{namespaces['reviews']}|{conf.cluster_name}|-
+v2|reviews-{count}|{namespaces['reviews']}|{conf.cluster_name}|-
+v3|reviews-{count}|{namespaces['reviews']}|{conf.cluster_name}|-
+*|reviews-{count}|{namespaces['reviews']}|{conf.cluster_name}|-''')
 
             k8s_objects.generate_bookinfo(
                 arguments, f"{folder}/k8s-objects/{key}/bookinfo.yaml"
@@ -217,11 +227,11 @@ def main():
         print(e)
         print("Error while generating certs")
         sys.exit(1)
-
+    global spm_services_file
     try:
         tenant_set = set()
         cluster_list = []
-
+        spm_services_file = open(os.path.join(args.folder, 'spm-services-bookinfo-multi.txt'), 'w')
         for appconfig in configs.app:
             for replica in appconfig.replicas:
                 tenant_set.add(replica.tenant_id)
@@ -245,7 +255,10 @@ def main():
                 configs.tctl_version,
                 folder,
             )
+        spm_services_file.close()
     except Exception as e:
+        if not spm_services_file.closed:
+            spm_services_file.close()
         print(e)
         print("Unknown error occurred while installing bookinfo.")
         sys.exit(1)

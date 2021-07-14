@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: t0w0demobkifnb0f
+  labels:
+    app: locust
+    role: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locust
+      role: worker
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app: locust
+        role: worker
+    spec:
+      containers:
+      - name: worker
+        image: locustio/locust
+        imagePullPolicy: IfNotPresent
+        command:
+        - locust
+        - -f
+        - /tsb/bookstore.py
+        - --config
+        - /tsb/worker.conf
+        - --master-host
+        - master.t0w0demobkifnb0f.svc.cluster.local
+        - --loglevel
+        - DEBUG
+        volumeMounts:
+        - name: config-volume
+          mountPath: /tsb/
+        - name: bookinfo
+          mountPath: /etc/bookinfo
+          readOnly: true
+      volumes:
+      - name: config-volume
+        configMap:
+          name: locust-config
+      - name: bookinfo
+        secret:
+          defaultMode: 420
+          secretName: t0w0demobkifnb0f-ca-cert
+      serviceAccountName: t0w0demobkifnb0f-trafficgen-sa

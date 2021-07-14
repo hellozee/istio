@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: master
+  namespace: t0w0demobkifnb0f
+  labels:
+    app: locust
+    role: master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locust
+      role: master
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app: locust
+        role: master
+    spec:
+      containers:
+      - name: master
+        image: locustio/locust
+        imagePullPolicy: IfNotPresent
+        command:
+        - locust
+        - -f
+        - /tsb/bookstore.py
+        - --config
+        - /tsb/master.conf
+        - --loglevel
+        - DEBUG
+        volumeMounts:
+        - name: config-volume
+          mountPath: /tsb/
+        ports:
+        - containerPort: 8089
+        - containerPort: 5557
+        - containerPort: 5558
+      volumes:
+      - name: config-volume
+        configMap:
+          name: locust-config
+      serviceAccountName: t0w0demobkifnb0f-trafficgen-sa
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: master
+  namespace: t0w0demobkifnb0f
+spec:
+  selector:
+    app: locust
+    role: master
+  ports:
+    - protocol: TCP
+      port: 5557
+      targetPort: 5557

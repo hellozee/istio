@@ -141,6 +141,8 @@ def main():
             sys.exit(1)
         http_routes = []
         curl_calls = []
+        global spm_services_file
+        spm_services_file = open(os.path.join(args.folder, 'spm-services-bookinfo-single.txt'), 'w')
 
         for i in range(conf.count):
             install_bookinfo(namespace, str(i), folder)
@@ -188,7 +190,18 @@ def main():
                 tsb_objects.generate_direct_reviews_vs(
                     ordered_arguments, f"{folder}/tsb-objects/reviews_vs-{i}.yaml"
                 )
+            # Do not try to indent below string
+            spm_services_file.write(f'''
+v1|ratings-{i}|{namespace}|{conf.cluster}|-
+*|ratings-{i}|{namespace}|{conf.cluster}|-
+v1|productpage-{i}|{namespace}|{conf.cluster}|-
+*|productpage-{i}|{namespace}|{conf.cluster}|-
+v1|reviews-{i}|{namespace}|{conf.cluster}|-
+v2|reviews-{i}|{namespace}|{conf.cluster}|-
+v3|reviews-{i}|{namespace}|{conf.cluster}|-
+*|reviews-{i}|{namespace}|{conf.cluster}|-''')
 
+        spm_services_file.close()
         if conf.mode == "bridged":
             t = open(script_path + "/templates/tsb-objects/bridged/gateway-single.yaml")
             template = Template(t.read())
@@ -243,6 +256,8 @@ def main():
 
         pass
     except Exception as e:
+        if not spm_services_file.closed:
+            spm_services_file.close()
         print(e)
         print("Error while generating the yamls.")
         sys.exit(1)
