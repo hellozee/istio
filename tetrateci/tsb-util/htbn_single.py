@@ -136,7 +136,7 @@ def main():
 
         http_routes = []
         curl_calls = []
-
+        spm_services_file = open(os.path.join(args.folder, 'spm-services-httpbin-single.txt'), 'w')
         for i in range(conf.count):
             install_httpbin(str(i), namespace, folder)
             name = "httpbin" + str(i)
@@ -162,6 +162,10 @@ def main():
                 tsb_objects.generate_direct_vs(
                     ordered_arguments, f"{folder}/tsb-objects/virtualservice-{i}.yaml"
                 )
+            # Do not try to indent below string
+            spm_services_file.write(f'''
+v1|httpbin{i}|{namespace}|{conf.cluster}|-
+*|httpbin{i}|{namespace}|{conf.cluster}|-''')
 
         if mode == "b":
             t = open(script_path + "/templates/tsb-objects/bridged/gateway-single.yaml")

@@ -143,7 +143,10 @@ def install_httpbin(
             k8s_objects.generate_trafficgen(
                 arguments, f"{folder}/k8s-objects/{key}/traffic-gen.yaml"
             )
-
+            # Do not try to indent below string
+            spm_services_file.write(f'''
+v1|httpbin{i}|{namespace}|{conf.cluster_name}|-
+*|httpbin{i}|{namespace}|{conf.cluster_name}|-''')
             print("Httpbin installed\n")
             i += 1
             count += 1
@@ -188,6 +191,8 @@ def main():
     try:
         tenant_set = set()
         cluster_list = []
+        global spm_services_file
+        spm_services_file = open(os.path.join(args.folder, 'spm-services-httpbin-multi.txt'), 'w')
 
         for appconfig in configs.app:
             for replica in appconfig.replicas:
