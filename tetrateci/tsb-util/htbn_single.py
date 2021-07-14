@@ -164,8 +164,8 @@ def main():
                 )
             # Do not try to indent below string
             spm_services_file.write(f'''
-v1|httpbin{i}|{namespace}|{conf.cluster}|-
-*|httpbin{i}|{namespace}|{conf.cluster}|-''')
+v1|httpbin|{namespace}|{conf.cluster}|-
+*|httpbin|{namespace}|{conf.cluster}|-''')
 
         if mode == "b":
             t = open(script_path + "/templates/tsb-objects/bridged/gateway-single.yaml")

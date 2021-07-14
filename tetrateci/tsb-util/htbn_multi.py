@@ -145,8 +145,8 @@ def install_httpbin(
             )
             # Do not try to indent below string
             spm_services_file.write(f'''
-v1|httpbin{i}|{namespace}|{conf.cluster_name}|-
-*|httpbin{i}|{namespace}|{conf.cluster_name}|-''')
+v1|httpbin|{namespace}|{conf.cluster_name}|-
+*|httpbin|{namespace}|{conf.cluster_name}|-''')
             print("Httpbin installed\n")
             i += 1
             count += 1
